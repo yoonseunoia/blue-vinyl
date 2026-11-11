@@ -544,3 +544,11 @@ input[type=file]{display:none}
 .del-btns{display:flex;gap:10px}
 .del-btns button{flex:1;height:46px;border-radius:999px;background:rgba(255,255,255,.1);font-size:14px;font-weight:500}
 .del-btns .danger{background:#e5484d;color:#fff}
+
+/* 홈(턴테이블) ↔ LP 리스트 스냅 전환 */
+.home-flat{position:absolute;inset:0;background:#545C86;transition:opacity .9s;pointer-events:none}
+#s-home.listed .home-flat{opacity:0}
+.stack.locked{overflow:hidden}
+#s-home .hero{transition:transform .9s cubic-bezier(.3,.7,.2,1),opacity .7s}
+#s-home.listed .hero{position:absolute;left:0;right:0;top:0;transform:translateY(-900px);opacity:0;pointer-events:none}
+#s-home.listed .stack{padding-top:43px}

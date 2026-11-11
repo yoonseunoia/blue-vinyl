@@ -295,7 +295,7 @@ function showToast(msg){const t=document.getElementById('toast');if(!t)return;t.
 function fastForward(){
   S.timeOffset=(S.timeOffset||0)+DAY; log('⏩ +1 day');
   const k=S.lps.findIndex(l=>l.status==='transit'&&status(l)==='arrived');
-  if(S.screen==='home'){ if(k>=0){S.focus=-1;log('Arrived: '+S.lps[k].city)} render(); if(k>=0) document.getElementById('stack').scrollTop=0; const hp=document.getElementById('hParcel'); if(hp&&hp.classList.contains('fresh')) heroArrival(S.lps[+hp.dataset.i],hp); }
+  if(S.screen==='home'){ if(k>=0){S.focus=-1;S.listed=false;log('Arrived: '+S.lps[k].city)} render(); if(k>=0) document.getElementById('stack').scrollTop=0; const hp=document.getElementById('hParcel'); if(hp&&hp.classList.contains('fresh')) heroArrival(S.lps[+hp.dataset.i],hp); }
 }
 function Delivered(){
   if(S.viewDeliver){ S.viewDeliver=false; S.currentLP=null; go('home','back'); return; }
@@ -376,8 +376,10 @@ home(){
     const body=st==='recording'?`<div class="body" style="${cover(lp)};background-size:cover;background-position:center"></div>`:'<div class="body"></div>';
     return `<div class="sleeve ${pos} ${st!=='collection'?'w-'+st:''}" data-a="focus" data-i="${i}" data-id="${lp.id}">${pos==='above'?strip+body:body+strip}${st==='arrived'?'<span class="tag">ARRIVED</span>':st==='recording'?'<span class="tag rec">● REC</span>':lp.shared?'<span class="tag sh">✈ SHARED</span>':''}</div>`;
   }).join('');
-  return `<div class="screen" id="s-home">
-    <div class="stack" id="stack">
+  if(S.focus>=0) S.listed=true;
+  return `<div class="screen ${S.listed?'listed':''}" id="s-home">
+    <div class="home-flat"></div>
+    <div class="stack ${S.listed?'':'locked'}" id="stack">
       <div class="hero">
         ${(()=>{const ri=S.lps.findIndex(l=>status(l)==='recording'), rl=ri>=0?S.lps[ri]:null;
           return `<div class="tt-vinyl ${rl?'on':''}" id="ttV" ${rl?`data-a="continueRec" data-i="${ri}"`:''}><div class="tt-label" style="${rl?labelBg(rl):''}"></div><div class="tt-hole"></div></div>
@@ -651,10 +653,10 @@ const after={
   home(){
     clearTimers();
     const st=document.getElementById('stack'), f=st.querySelector('.focus');
-    if(!S.homeSeen){ S.homeSeen=true; st.scrollTop=0; }
+    if(!S.listed) st.scrollTop=0;
     else if(f) st.scrollTop=f.offsetTop-(st.clientHeight-f.offsetHeight)/2;
-    st.onscroll=()=>{const h=st.querySelector('.hero');if(h){const y=st.scrollTop;h.style.setProperty('--y',y)}
-      if(S.focus>=0&&st.scrollTop<150&&!S.collapsing&&!S.autoScrolling){S.collapsing=true;focusLP(-1);setTimeout(()=>S.collapsing=false,900)}};
+    st.onscroll=()=>{ if(st.scrollTop>2) S.topAt=0; else if(!S.topAt) S.topAt=performance.now(); };
+    bindListGesture(st);
     // 펼친 앨범으로 자동 이동할 때는 접힘 판정에서 제외
     S.autoScrolling=true; setTimeout(()=>S.autoScrolling=false,300);
     // PULL OUT TO OPEN: 처음엔 살짝 버티다가 임계점을 넘으면 쑥 빠져나감
@@ -665,10 +667,10 @@ const after={
       else requestAnimationFrame(()=>requestAnimationFrame(()=>{arm.classList.toggle('down',down);arm.classList.toggle('up',!down)}));
       S.armPrev=down; }
     if(!S.introPlayed){ S.introPlayed=true; homeIntro(); }
-    else if(S.enteredScreen&&!S.skipPlaneFly&&st.scrollTop<300) flyInPlanes(450);
+    else if(S.enteredScreen&&!S.skipPlaneFly&&!S.listed) flyInPlanes(450);
     S.skipPlaneFly=false;
     const hp=document.getElementById('hParcel');
-    if(hp&&hp.classList.contains('fresh')&&st.scrollTop<200) heroArrival(S.lps[+hp.dataset.i],hp);
+    if(hp&&hp.classList.contains('fresh')&&!S.listed) heroArrival(S.lps[+hp.dataset.i],hp);
     if(!fe) return;
     const stNow=status(S.lps[S.focus]);
     if(stNow==='arrived'&&!S.lps[S.focus].seenArrival) arrivalSequence(S.lps[S.focus]);
@@ -860,6 +862,7 @@ const after={
 /* 홈: 앨범 탭 → 주변이 밀려나고 선택한 앨범이 가운데로 (FLIP 애니메이션) */
 function focusLP(i){
   if(i===S.focus) return;
+  if(i>=0&&!S.listed){ enterList(); setTimeout(()=>focusLP(i),780); return; }
   const prevId=S.focus>=0?S.lps[S.focus].id:null, nextId=i>=0?S.lps[i].id:null;
   const oldScroll=document.getElementById('stack').scrollTop;
   const before={}, side={};
@@ -1027,6 +1030,42 @@ function arrivalSequence(lp){
   // 5. 글자들 떠오름
   setTimeout(()=>[title,line,pull].forEach((el,k)=>{ if(!el) return; el.style.opacity='';
     el.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:600,delay:k*160,fill:'backwards',easing:'ease-out'}); }),500+1300+800);
+}
+/* 홈 ↔ LP 리스트: 스크롤(휠/드래그) 한 번에 두 상태 사이를 넘어감
+   턴테이블은 위로 날아가며 사라지고, 배경이 어두워지고, 슬리브들이 38ms씩 시차를 두고 올라옴 */
+function listEls(){ return [...app.querySelectorAll('#stack > .sleeve, #stack > .focus')]; }
+function switchList(on){
+  const scr=document.getElementById('s-home'), st=document.getElementById('stack'); if(!scr||S.switching) return;
+  if(!on&&S.focus>=0){ S.focus=-1; render(); app.querySelector('.screen').style.animation='none'; return switchList(false); }
+  S.switching=true; setTimeout(()=>S.switching=false,900);
+  const els=listEls(), before=els.map(e=>e.getBoundingClientRect().top);
+  S.listed=on; scr.classList.toggle('listed',on); st.classList.toggle('locked',!on); st.scrollTop=0; S.topAt=performance.now();
+  els.forEach((e,k)=>{ const dy=(before[k]-e.getBoundingClientRect().top)/S.scale; e.style.transition='none'; e.style.transform=`translateY(${dy}px)`; });
+  requestAnimationFrame(()=>requestAnimationFrame(()=>els.forEach((e,k)=>{
+    e.style.transition=`transform .75s cubic-bezier(.22,.9,.28,1) ${(on?k:els.length-1-k)*38}ms`; e.style.transform='';
+  })));
+  setTimeout(()=>els.forEach(e=>e.style.transition=''),1300);
+  if(!on) flyInPlanes(380);
+  if(navigator.vibrate) navigator.vibrate(6);
+  log(on?'scroll → LP list':'back to turntable');
+}
+const enterList=()=>switchList(true), exitList=()=>switchList(false);
+function bindListGesture(st){
+  let y0=null, x0=0, lastWheel=0;
+  st.addEventListener('wheel',e=>{
+    if(!S.listed){ e.preventDefault(); if(e.deltaY>8&&performance.now()-lastWheel>900){ lastWheel=performance.now(); enterList(); } return; }
+    if(e.deltaY<-8&&st.scrollTop<=0&&S.topAt&&performance.now()-S.topAt>350&&performance.now()-lastWheel>900){ lastWheel=performance.now(); exitList(); }
+  },{passive:false});
+  const start=(y,x)=>{ y0=y; x0=x; }, move=(y,x)=>{ if(y0===null) return;
+    const dy=(y-y0)/S.scale, dx=(x-x0)/S.scale;
+    if(!S.listed&&dy<-36&&Math.abs(dx)<Math.abs(dy)){ y0=null; enterList(); }
+    else if(S.listed&&st.scrollTop<=0&&dy>56&&Math.abs(dx)<Math.abs(dy)*.6){ y0=null; exitList(); } };
+  st.addEventListener('touchstart',e=>start(e.touches[0].clientY,e.touches[0].clientX),{passive:true});
+  st.addEventListener('touchmove',e=>{ if(!S.listed) e.preventDefault(); move(e.touches[0].clientY,e.touches[0].clientX); },{passive:false});
+  st.addEventListener('touchend',()=>y0=null);
+  st.addEventListener('pointerdown',e=>{ if(e.pointerType==='mouse'&&!e.target.closest('.pull')) start(e.clientY,e.clientX); });
+  st.addEventListener('pointermove',e=>{ if(e.pointerType==='mouse'&&e.buttons) move(e.clientY,e.clientX); });
+  st.addEventListener('pointerup',()=>y0=null);
 }
 /* 종이비행기 두 대가 화면 밖에서 곡선을 그리며 날아와 자리에 내려앉음 (코 방향으로 진행) */
 function flyInPlanes(delay=0){
@@ -1213,7 +1252,7 @@ function saveInfo(){
   log('EnterInfo saved');
 }
 const A={
-  focus:el=>focusLP(+el.dataset.i),
+  focus:el=>{ if(!S.listed) return enterList(); focusLP(+el.dataset.i) },
   askDelete:el=>{ const i=+el.dataset.i, lp=S.lps[i]; if(!lp) return;
     const ov=document.createElement('div'); ov.className='del-ov'; ov.id='delOv';
     ov.innerHTML=`<div class="del-card"><b>Delete “${lp.city||'New Journey'}”?</b><p>${lp.moments.length} moment${lp.moments.length===1?'':'s'} will be removed. This can’t be undone.</p>
