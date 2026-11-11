@@ -295,7 +295,7 @@ function showToast(msg){const t=document.getElementById('toast');if(!t)return;t.
 function fastForward(){
   S.timeOffset=(S.timeOffset||0)+DAY; log('⏩ +1 day');
   const k=S.lps.findIndex(l=>l.status==='transit'&&status(l)==='arrived');
-  if(S.screen==='home'){ if(k>=0){S.focus=-1;S.listed=false;log('Arrived: '+S.lps[k].city)} render(); if(k>=0) document.getElementById('stack').scrollTop=0; const hp=document.getElementById('hParcel'); if(hp&&hp.classList.contains('fresh')) heroArrival(S.lps[+hp.dataset.i],hp); }
+  if(S.screen==='home'){ if(k>=0){S.focus=-1;S.listed=false;log('Arrived: '+S.lps[k].city)} render(); const hp=document.getElementById('hParcel'); if(hp&&hp.classList.contains('fresh')) heroArrival(S.lps[+hp.dataset.i],hp); }
 }
 function Delivered(){
   if(S.viewDeliver){ S.viewDeliver=false; S.currentLP=null; go('home','back'); return; }
@@ -358,7 +358,7 @@ home(){
                   arrived:`<div class="wip arrived">✉ ARRIVED FROM ${city.toUpperCase()} · OPEN ME</div>`,collection:''}[st];
       const parcel=wrapped?parcelHTML(lp,st,'parcel'):'';
       return `
-      <div class="focus ${wrapped?'wrapped '+st:''}" data-id="${lp.id}">
+      <div class="focus ${wrapped?'wrapped '+st:''}" data-id="${lp.id}" style="--i:${dp+1}">
         <div class="cover-wrap" id="pullTarget">
           <div class="cover" style="${cover(lp)}">${coverType(lp)}</div>
           <div class="peek vinyl" id="peek"><div class="vlabel" style="${labelBg(lp)}"></div><div class="hole"></div></div>
@@ -370,11 +370,11 @@ home(){
         ${line}
         <button class="lp-del" data-a="askDelete" data-i="${i}" aria-label="Delete this record"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 12.5h9l1-12.5M10 11v5.5M14 11v5.5"/></svg></button>
       </div>`;}
-    const pos=(fpos<0||dp<fpos)?'above':'below';
+    const pos=slotDir(dp+1)==='down'?'above':'below';
     const st=status(lp);
     const strip=`<div class="strip">${st==='recording'?'<i class="rec"></i>':st==='transit'?'<span class="tico">✈</span>':st==='arrived'?'<i class="gold"></i>':''}<b>${lp.city||'New Journey'}</b>${lp.date}</div>`;
     const body=st==='recording'?`<div class="body" style="${cover(lp)};background-size:cover;background-position:center"></div>`:'<div class="body"></div>';
-    return `<div class="sleeve ${pos} ${st!=='collection'?'w-'+st:''}" data-a="focus" data-i="${i}" data-id="${lp.id}">${pos==='above'?strip+body:body+strip}${st==='arrived'?'<span class="tag">ARRIVED</span>':st==='recording'?'<span class="tag rec">● REC</span>':lp.shared?'<span class="tag sh">✈ SHARED</span>':''}</div>`;
+    return `<div class="sleeve ${pos} ${st!=='collection'?'w-'+st:''}" data-a="focus" data-i="${i}" data-id="${lp.id}" style="--i:${dp+1}">${pos==='above'?strip+body:body+strip}${st==='arrived'?'<span class="tag">ARRIVED</span>':st==='recording'?'<span class="tag rec">● REC</span>':lp.shared?'<span class="tag sh">✈ SHARED</span>':''}</div>`;
   }).join('');
   if(S.focus>=0) S.listed=true;
   return `<div class="screen ${S.listed?'listed':''}" id="s-home">
@@ -395,7 +395,7 @@ home(){
           return `<button class="hparcel ${lp.heroSeen?'':'fresh'}" data-a="openArrived" data-i="${ai}" id="hParcel"><div class="hp-inner">${parcelHTML(lp,'arrived')}</div><span class="hp-cap">from ${(lp.city||'').split(',')[0]} · tap to open</span></button>`})()}
         ${(()=>{const n=S.lps.filter(l=>status(l)==='arrived').length;return n?`<div class="scroll-hint warm">✉ ${n} ARRIVED · MY RECORDS ↓</div>`:'<div class="scroll-hint">MY RECORDS ↓</div>'})()}
       </div>
-      <div class="sleeve above add" data-a="newLP" data-id="add"><div class="strip"><b>+ Add New Album</b></div><div class="body"><span>+</span></div></div>
+      <div class="sleeve above add" data-a="newLP" data-id="add" style="--i:0"><div class="strip"><b>+ Add New Album</b></div><div class="body"><span>+</span></div></div>
       ${items}
     </div>
     <div class="toast" id="toast" style="bottom:120px"></div>
@@ -653,9 +653,7 @@ const after={
   home(){
     clearTimers();
     const st=document.getElementById('stack'), f=st.querySelector('.focus');
-    if(!S.listed) st.scrollTop=0;
-    else if(f) st.scrollTop=f.offsetTop-(st.clientHeight-f.offsetHeight)/2;
-    st.onscroll=()=>{ if(st.scrollTop>2) S.topAt=0; else if(!S.topAt) S.topAt=performance.now(); };
+    if(S.layoutFrom) animateFrom(S.layoutFrom); else applyLayout(false); S.layoutFrom=null;
     bindListGesture(st);
     // 펼친 앨범으로 자동 이동할 때는 접힘 판정에서 제외
     S.autoScrolling=true; setTimeout(()=>S.autoScrolling=false,300);
@@ -862,45 +860,11 @@ const after={
 /* 홈: 앨범 탭 → 주변이 밀려나고 선택한 앨범이 가운데로 (FLIP 애니메이션) */
 function focusLP(i){
   if(i===S.focus) return;
-  if(i>=0&&!S.listed){ enterList(); setTimeout(()=>focusLP(i),780); return; }
   const prevId=S.focus>=0?S.lps[S.focus].id:null, nextId=i>=0?S.lps[i].id:null;
-  const oldScroll=document.getElementById('stack').scrollTop;
-  const before={}, side={};
-  app.querySelectorAll('#stack [data-id]').forEach(el=>{before[el.dataset.id]=el.getBoundingClientRect().top; side[el.dataset.id]=el.classList.contains('above')?'above':el.classList.contains('below')?'below':null;});
-  S.focus=i; log(i>=0?'focus LP '+S.lps[i].city:'collapse (scrolled to top)');
+  if(i>=0) S.listed=true;
+  S.layoutFrom=snapLayout(); S.focus=i; log(i>=0?'focus LP '+S.lps[i].city:'collapse');
   render(); app.querySelector('.screen').style.animation='none';
-  if(i<0) document.getElementById('stack').scrollTop=oldScroll;
-  const els=[...app.querySelectorAll('#stack [data-id]')];
-  els.forEach(el=>{
-    const id=el.dataset.id, dy=(before[id]-el.getBoundingClientRect().top)/S.scale;
-    if(id===nextId) el.classList.add('pop');
-    if(id===prevId) el.classList.add('shrink');
-    // 위/아래가 바뀐 슬리브: 라벨 띠가 뒤집히며 반대편으로 넘어가고, 사다리꼴도 반대로 기울어짐
-    const now=el.classList.contains('above')?'above':el.classList.contains('below')?'below':null;
-    if(side[id]&&now&&side[id]!==now&&!el.classList.contains('add')){
-      const strip=el.querySelector('.strip'), body=el.querySelector('.body');
-      const up=now==='above';                       // 아래 → 위로 넘어감
-      const ds=up?54:-54, db=up?-12:12;
-      const ease='cubic-bezier(.45,0,.2,1)', dur=900, delay=200;
-      strip.animate([
-        {transform:`translateY(${ds}px)`},
-        {transform:`translateY(${ds/2}px) rotateX(90deg) scaleX(.9)`,offset:.5},
-        {transform:'none'}
-      ],{duration:dur,delay,easing:ease,fill:'backwards'});
-      const tilt=['polygon(0 0,100% 0,96% 100%,4% 100%)','polygon(4% 0,96% 0,100% 100%,0 100%)'];
-      body.animate([
-        {transform:`translateY(${db}px)`,clipPath:up?tilt[1]:tilt[0]},
-        {clipPath:'polygon(2% 0,98% 0,98% 100%,2% 100%)',offset:.5},
-        {transform:'none',clipPath:up?tilt[0]:tilt[1]}
-      ],{duration:dur,delay,easing:ease,fill:'backwards'});
-    }
-    if(!dy) return;
-    el.style.transition='none'; el.style.transform=`translateY(${dy}px)`;
-  });
-  requestAnimationFrame(()=>requestAnimationFrame(()=>els.forEach((el,k)=>{
-    const d=Math.abs(els.findIndex(e=>e.dataset.id===nextId)-k);   // 가까운 것부터 살짝 시차
-    el.style.transition=`transform .85s cubic-bezier(.22,.9,.25,1) ${d*30}ms`; el.style.transform='';
-  })));
+  app.querySelectorAll('#stack [data-id]').forEach(el=>{ if(el.dataset.id===nextId) el.classList.add('pop'); if(el.dataset.id===prevId) el.classList.add('shrink'); });
 }
 function slipOut(from=0){
   const peek=document.getElementById('peek'); S.playSel=0;S.sheet=false;
@@ -1033,18 +997,47 @@ function arrivalSequence(lp){
 }
 /* 홈 ↔ LP 리스트: 스크롤(휠/드래그) 한 번에 두 상태 사이를 넘어감
    턴테이블은 위로 날아가며 사라지고, 배경이 어두워지고, 슬리브들이 38ms씩 시차를 두고 올라옴 */
-function listEls(){ return [...app.querySelectorAll('#stack > .sleeve, #stack > .focus')]; }
+/* 슬리브 자리표: 위쪽 4칸은 라벨이 위(down), 아래는 라벨이 아래(up). 가운데로 갈수록 얇아져 상자 속 레코드처럼 보임 */
+const SLOTS=[{top:6,h:71,dir:'down'},{top:95,h:67,dir:'down'},{top:177,h:44,dir:'down'},{top:259,h:15,dir:'down'},{top:332,h:10,dir:'up'},
+  {top:385,h:37,dir:'up'},{top:443,h:61,dir:'up'},{top:516,h:68,dir:'up'},{top:596,h:69,dir:'up'},{top:676,h:58,dir:'up'}];
+const slotDir=k=>SLOTS[Math.min(k,SLOTS.length-1)].dir;
+const FOC={h:200,c:58};
+function homeG(){ const ph=document.getElementById('phone'); return Math.max(560,Math.min(1000,(ph&&ph.offsetHeight)||852)); }
+function slotPos(k,off){ const n=SLOTS[Math.min(k,SLOTS.length-1)], r=homeG()/799; return {top:n.top*r+off,h:Math.max(8,Math.round(n.h*r)),dir:n.dir,hidden:k>=SLOTS.length}; }
+function focusTop(k,off=43){ const n=slotPos(k,off), g=homeG(), c=n.top+(n.h+11)/2; return Math.max(70,Math.min(g-FOC.h-FOC.c-24,c-FOC.h/2)); }
+function homeLayout(count){
+  const off=S.listed?43:508, base=Array.from({length:count},(_,k)=>slotPos(k,off));
+  const fk=S.focus>=0?S.lps.length-S.focus:-1;           // 펼친 LP의 칸 번호 (0번은 Add)
+  if(fk<0||!S.listed) return base;
+  const g=homeG(), sel=base[fk], a=focusTop(fk), up=Math.max(0,sel.top-a)+10, dn=Math.max(0,a+FOC.h+FOC.c-(sel.top+sel.h+11))+10;
+  return base.map((p,k)=>{ if(k===fk) return {...p,top:a,focus:true};
+    const t=k<fk?p.top-up:p.top+dn; return {...p,top:t,hidden:p.hidden||t+p.h+11<0||t>g}; });
+}
+function homeEls(){ return [...app.querySelectorAll('#stack > .sleeve, #stack > .focus')]; }
+function applyLayout(anim=true){
+  const st=document.getElementById('stack'); if(!st) return;
+  const els=homeEls(), L=homeLayout(els.length);
+  if(!anim) st.classList.add('noanim');
+  els.forEach((el,k)=>{ const p=L[k];
+    el.style.top=(el.classList.contains('focus')?p.top-10:p.top)+'px';
+    el.style.opacity=p.hidden?0:''; el.style.pointerEvents=p.hidden?'none':'';
+    const b=el.querySelector(':scope > .body'); if(b) b.style.height=p.h+'px'; });
+  if(!anim){ st.offsetHeight; st.classList.remove('noanim'); }
+}
+function snapLayout(){ const o={}; homeEls().forEach(el=>{ const b=el.querySelector(':scope > .body'); o[el.dataset.id]={top:el.style.top,h:b?b.style.height:'',focus:el.classList.contains('focus')}; }); return o; }
+function animateFrom(prev){
+  const st=document.getElementById('stack'); st.classList.add('noanim');
+  homeEls().forEach(el=>{ const p=prev[el.dataset.id]; if(!p) return;
+    const nowFocus=el.classList.contains('focus');
+    el.style.top=(nowFocus&&!p.focus)?(parseFloat(p.top)-10)+'px':(!nowFocus&&p.focus)?(parseFloat(p.top)+10)+'px':p.top;
+    const b=el.querySelector(':scope > .body'); if(b&&p.h) b.style.height=p.h; });
+  st.offsetHeight; st.classList.remove('noanim'); applyLayout(true);
+}
 function switchList(on){
-  const scr=document.getElementById('s-home'), st=document.getElementById('stack'); if(!scr||S.switching) return;
-  if(!on&&S.focus>=0){ S.focus=-1; render(); app.querySelector('.screen').style.animation='none'; return switchList(false); }
+  const scr=document.getElementById('s-home'); if(!scr||S.switching||S.listed===on) return;
   S.switching=true; setTimeout(()=>S.switching=false,900);
-  const els=listEls(), before=els.map(e=>e.getBoundingClientRect().top);
-  S.listed=on; scr.classList.toggle('listed',on); st.classList.toggle('locked',!on); st.scrollTop=0; S.topAt=performance.now();
-  els.forEach((e,k)=>{ const dy=(before[k]-e.getBoundingClientRect().top)/S.scale; e.style.transition='none'; e.style.transform=`translateY(${dy}px)`; });
-  requestAnimationFrame(()=>requestAnimationFrame(()=>els.forEach((e,k)=>{
-    e.style.transition=`transform .75s cubic-bezier(.22,.9,.28,1) ${(on?k:els.length-1-k)*38}ms`; e.style.transform='';
-  })));
-  setTimeout(()=>els.forEach(e=>e.style.transition=''),1300);
+  if(!on&&S.focus>=0){ S.layoutFrom=snapLayout(); S.focus=-1; S.listed=false; render(); app.querySelector('.screen').style.animation='none'; flyInPlanes(380); log('back to turntable'); return; }
+  S.listed=on; scr.classList.toggle('listed',on); applyLayout(true);
   if(!on) flyInPlanes(380);
   if(navigator.vibrate) navigator.vibrate(6);
   log(on?'scroll → LP list':'back to turntable');
@@ -1052,18 +1045,16 @@ function switchList(on){
 const enterList=()=>switchList(true), exitList=()=>switchList(false);
 function bindListGesture(st){
   let y0=null, x0=0, lastWheel=0;
-  st.addEventListener('wheel',e=>{
-    if(!S.listed){ e.preventDefault(); if(e.deltaY>8&&performance.now()-lastWheel>900){ lastWheel=performance.now(); enterList(); } return; }
-    if(e.deltaY<-8&&st.scrollTop<=0&&S.topAt&&performance.now()-S.topAt>350&&performance.now()-lastWheel>900){ lastWheel=performance.now(); exitList(); }
-  },{passive:false});
-  const start=(y,x)=>{ y0=y; x0=x; }, move=(y,x)=>{ if(y0===null) return;
-    const dy=(y-y0)/S.scale, dx=(x-x0)/S.scale;
-    if(!S.listed&&dy<-36&&Math.abs(dx)<Math.abs(dy)){ y0=null; enterList(); }
-    else if(S.listed&&st.scrollTop<=0&&dy>56&&Math.abs(dx)<Math.abs(dy)*.6){ y0=null; exitList(); } };
-  st.addEventListener('touchstart',e=>start(e.touches[0].clientY,e.touches[0].clientX),{passive:true});
-  st.addEventListener('touchmove',e=>{ if(!S.listed) e.preventDefault(); move(e.touches[0].clientY,e.touches[0].clientX); },{passive:false});
+  st.addEventListener('wheel',e=>{ e.preventDefault(); if(Math.abs(e.deltaY)<8||performance.now()-lastWheel<900) return;
+    lastWheel=performance.now(); if(e.deltaY>0&&!S.listed) enterList(); else if(e.deltaY<0&&S.listed) exitList(); },{passive:false});
+  const skip=t=>t.closest&&t.closest('.cover-wrap,.pull,.del-ov,.lp-del');
+  const start=(e,y,x)=>{ y0=skip(e.target)?null:y; x0=x; }, move=(y,x)=>{ if(y0===null) return;
+    const dy=(y-y0)/S.scale, dx=(x-x0)/S.scale; if(Math.abs(dx)>Math.abs(dy)) return;
+    if(!S.listed&&dy<-36){ y0=null; enterList(); } else if(S.listed&&dy>36){ y0=null; exitList(); } };
+  st.addEventListener('touchstart',e=>start(e,e.touches[0].clientY,e.touches[0].clientX),{passive:true});
+  st.addEventListener('touchmove',e=>{ if(y0!==null) e.preventDefault(); move(e.touches[0].clientY,e.touches[0].clientX); },{passive:false});
   st.addEventListener('touchend',()=>y0=null);
-  st.addEventListener('pointerdown',e=>{ if(e.pointerType==='mouse'&&!e.target.closest('.pull')) start(e.clientY,e.clientX); });
+  st.addEventListener('pointerdown',e=>{ if(e.pointerType==='mouse') start(e,e.clientY,e.clientX); });
   st.addEventListener('pointermove',e=>{ if(e.pointerType==='mouse'&&e.buttons) move(e.clientY,e.clientX); });
   st.addEventListener('pointerup',()=>y0=null);
 }
@@ -1321,7 +1312,7 @@ const A={
     const v=document.getElementById('ttV'); if(navigator.vibrate) navigator.vibrate(10);
     v&&v.animate([{transform:'none'},{transform:'scale(1.04)'}],{duration:350,easing:'ease-out',fill:'forwards'});
     setTimeout(()=>go('hub','Continue from turntable'),320); },
-  openArrived:el=>{ const i=+el.dataset.i; if(S.focus===i){const f=app.querySelector('.focus');const st=document.getElementById('stack');st.scrollTo({top:f.offsetTop-(st.clientHeight-f.offsetHeight)/2,behavior:'smooth'});return}
+  openArrived:el=>{ const i=+el.dataset.i; if(S.focus===i) return;
     S.autoScrolling=true; focusLP(i); setTimeout(()=>S.autoScrolling=false,1200); },
   viewDeliver:()=>{S.currentLP=S.lps[S.focus];S.viewDeliver=true;go('deliver','view delivery')},
   tearHint:()=>{const pc=document.getElementById('parcel');pc&&pc.animate([{clipPath:tear(0)},{clipPath:tear(14)},{clipPath:tear(0)}],{duration:900,easing:'ease-in-out'});showToast('포장을 오른쪽으로 끌어서 뜯어주세요')},

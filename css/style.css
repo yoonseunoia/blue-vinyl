@@ -550,5 +550,14 @@ input[type=file]{display:none}
 #s-home.listed .home-flat{opacity:0}
 .stack.locked{overflow:hidden}
 #s-home .hero{transition:transform .9s cubic-bezier(.3,.7,.2,1),opacity .7s}
-#s-home.listed .hero{position:absolute;left:0;right:0;top:0;transform:translateY(-900px);opacity:0;pointer-events:none}
-#s-home.listed .stack{padding-top:43px}
+#s-home.listed .hero{transform:translateY(-900px);opacity:0;pointer-events:none}
+
+/* 리스트는 스크롤 대신 고정 자리표로 배치 */
+#s-home .stack{overflow:hidden;padding:0;touch-action:none}
+#s-home .hero{position:absolute;left:0;right:0;top:0;margin:0}
+#s-home .sleeve{position:absolute;left:45.5px;margin:0;transition:top .75s cubic-bezier(.22,.9,.28,1) calc(var(--i,0)*38ms),opacity .4s ease,transform .2s}
+#s-home .sleeve .body{transition:height .75s cubic-bezier(.22,.9,.28,1) calc(var(--i,0)*38ms)}
+#s-home .sleeve.above .body{clip-path:polygon(0 0,100% 0,96.5% 100%,3.5% 100%)}
+#s-home .sleeve.below .body{clip-path:polygon(3.5% 0,96.5% 0,100% 100%,0 100%)}
+#s-home .focus{position:absolute;left:0;right:0;margin:0;z-index:3;transition:top .75s cubic-bezier(.22,.9,.28,1),opacity .4s}
+#s-home .stack.noanim .sleeve,#s-home .stack.noanim .sleeve .body,#s-home .stack.noanim .focus{transition:none!important}
