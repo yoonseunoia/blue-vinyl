@@ -637,7 +637,7 @@ function renderHud(){
 }
 document.getElementById('ff').onclick=fastForward;
 S.introVariant='split';
-document.getElementById('varB').onclick=()=>{ S.introVariant=S.introVariant==='split'?'classic':'split'; const b=document.getElementById('varB'); b.textContent=S.introVariant==='split'?'Intro B':'Intro A'; log('New LP intro → '+(S.introVariant==='split'?'B (split)':'A (classic)')); };
+/* 인트로는 시안 B(재킷=정보, 판=모먼트)로 고정 */
 document.getElementById('hud').onclick=()=>document.getElementById('log').classList.toggle('show');
 
 /* =========================================================
