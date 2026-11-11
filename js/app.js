@@ -269,7 +269,7 @@ function closePaperAirplane(mode){
   const ov=document.getElementById('paOv'); if(!ov) return;
   const card=document.getElementById('paCard'), pl=document.getElementById('paPlane'), cap=document.getElementById('paCap'), btns=document.getElementById('paBtns');
   [cap,btns].forEach(e=>e.animate([{opacity:1},{opacity:0}],{duration:300,fill:'forwards'}));
-  const done=()=>{ov.remove(); const p=app.querySelector('.planes'); if(p){p.style.visibility='';p.animate([{transform:'translate(200px,-200px)',opacity:0},{transform:'none',opacity:1}],{duration:900,easing:'cubic-bezier(.2,.8,.3,1)'})}};
+  const done=()=>{ov.remove(); const p=app.querySelector('.planes'); if(p){p.style.visibility='';flyInPlanes(0)}};
   ov.animate([{background:'rgba(12,13,24,.45)'},{background:'rgba(12,13,24,0)'}],{duration:900,delay:300,fill:'forwards'});
   if(mode==='discard'){ // 다시 접혀서 비행기가 되어 날아감
     card.animate([{transform:'translateY(-120px)',opacity:1},{transform:'translateY(-120px) scale(.15,.05) rotate(14deg)',opacity:0}],{duration:500,easing:'ease-in',fill:'forwards'});
@@ -628,6 +628,7 @@ plane(){
 };
 
 function render(){
+  S.enteredScreen=S.lastRendered!==S.screen; S.lastRendered=S.screen;
   app.innerHTML=screens[S.screen]();
   after[S.screen]&&after[S.screen]();
   renderHud();
@@ -664,6 +665,8 @@ const after={
       else requestAnimationFrame(()=>requestAnimationFrame(()=>{arm.classList.toggle('down',down);arm.classList.toggle('up',!down)}));
       S.armPrev=down; }
     if(!S.introPlayed){ S.introPlayed=true; homeIntro(); }
+    else if(S.enteredScreen&&!S.skipPlaneFly&&st.scrollTop<300) flyInPlanes(450);
+    S.skipPlaneFly=false;
     const hp=document.getElementById('hParcel');
     if(hp&&hp.classList.contains('fresh')&&st.scrollTop<200) heroArrival(S.lps[+hp.dataset.i],hp);
     if(!fe) return;
@@ -1025,6 +1028,23 @@ function arrivalSequence(lp){
   setTimeout(()=>[title,line,pull].forEach((el,k)=>{ if(!el) return; el.style.opacity='';
     el.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:600,delay:k*160,fill:'backwards',easing:'ease-out'}); }),500+1300+800);
 }
+/* 종이비행기 두 대가 화면 밖에서 곡선을 그리며 날아와 자리에 내려앉음 (코 방향으로 진행) */
+function flyInPlanes(delay=0){
+  const p1=app.querySelector('.planes .p1'), p2=app.querySelector('.planes .p2'); const out=[];
+  if(p1) out.push(p1.animate([
+    {transform:'translate(-300px,180px) rotate(-4deg) scale(.8)',opacity:0},
+    {transform:'translate(-210px,90px) rotate(-14deg) scale(.88)',opacity:1,offset:.25},
+    {transform:'translate(-90px,-34px) rotate(-30deg) scale(.96)',offset:.6},
+    {transform:'translate(10px,-14px) rotate(-2deg)',offset:.85},
+    {transform:'rotate(-8deg)',opacity:1}],{duration:1900,delay,easing:'cubic-bezier(.35,.1,.25,1)',fill:'backwards'}));
+  if(p2) out.push(p2.animate([
+    {transform:'translate(260px,200px) scaleX(-1) rotate(0deg) scale(.8)',opacity:0},
+    {transform:'translate(170px,110px) scaleX(-1) rotate(-10deg) scale(.88)',opacity:1,offset:.25},
+    {transform:'translate(70px,-30px) scaleX(-1) rotate(-28deg) scale(.96)',offset:.6},
+    {transform:'translate(-8px,-12px) scaleX(-1) rotate(-6deg)',offset:.85},
+    {transform:'scaleX(-1) rotate(-14deg)',opacity:1}],{duration:2100,delay:delay+350,easing:'cubic-bezier(.35,.1,.25,1)',fill:'backwards'}));
+  return out;
+}
 /* 앱을 열 때: 어둠 속 워드마크 → 파란 판이 드러남 → 톤암이 스윙해 들어옴 → 비행기, 인사, 슬리브 */
 function homeIntro(){
   const scr=app.querySelector('#s-home'); scr.style.animation='none';
@@ -1041,7 +1061,7 @@ function homeIntro(){
   const down=arm&&arm.dataset.down==='1';
   const t1=setTimeout(()=>{ if(!arm) return; arm.classList.remove('off'); arm.classList.add(down?'down':'up'); },1300);
   const t2=setTimeout(()=>{ if(navigator.vibrate) navigator.vibrate(down?[12,30,8]:8); },1300+1100);
-  A(pl,[{opacity:0,transform:'translate(220px,-240px) rotate(-20deg)'},{opacity:1,transform:'none'}],{duration:1100,delay:1700,easing:'cubic-bezier(.2,.8,.3,1)',fill:'backwards'});
+  flyInPlanes(1700).forEach(a=>anims.push(a));
   extra.forEach(e=>A(e,[{opacity:0},{opacity:1}],{duration:600,delay:2100,fill:'backwards'}));
   A(gr,[{opacity:0,transform:'translateY(10px)'},{opacity:1,transform:'none'}],{duration:800,delay:2100,easing:'ease-out',fill:'backwards'});
   A(hint,[{opacity:0},{opacity:.45}],{duration:600,delay:2400,fill:'backwards'});
