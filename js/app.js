@@ -389,7 +389,6 @@ home(){
         ${rl?`<button class="now-rec" data-a="continueRec" data-i="${ri}"><i></i><span><b>NOW RECORDING</b>${rl.city||'New Journey'} · ${rl.moments.length} moment${rl.moments.length===1?'':'s'}</span><em>›</em></button>`:''}`})()}
         <button class="planes" data-a="plane" aria-label="Paper Airplane">
           <svg class="pl p1" viewBox="0 0 64 44"><polygon points="2,24 62,2 26,32" fill="#f4f0e6"/><polygon points="26,32 62,2 32,42" fill="#d9d3c4"/><polygon points="26,32 32,42 28,30" fill="#bfb8a8"/></svg>
-          <svg class="pl p2" viewBox="0 0 64 44"><polygon points="2,24 62,2 26,32" fill="#f4f0e6"/><polygon points="26,32 62,2 32,42" fill="#d9d3c4"/><polygon points="26,32 32,42 28,30" fill="#bfb8a8"/></svg>
         </button>
         ${(()=>{const ai=S.lps.findIndex(l=>status(l)==='arrived'); if(ai<0) return '';
           const lp=S.lps[ai];
@@ -1015,7 +1014,7 @@ function homeLayout(count){
   const fk=S.focus>=0?S.lps.length-S.focus:-1;           // 펼친 LP의 칸 번호 (0번은 Add)
   if(fk<0||!S.listed) return base;
   const flp=S.lps[S.focus], extra=(status(flp)!=='collection'||flp.shared)?24:0;  // 제목 아래 상태 줄이 있으면 그만큼 더 띄움
-  const g=homeG(), sel=base[fk], a=focusTop(fk), up=Math.max(0,sel.top-a)+10, dn=Math.max(0,a+FOC.h+FOC.c+extra-(sel.top+sel.h+11))+10;
+  const g=homeG(), sel=base[fk], a=focusTop(fk), up=Math.max(0,sel.top-a)+20, dn=Math.max(0,a+FOC.h+FOC.c+extra-(sel.top+sel.h+11))+20;
   return base.map((p,k)=>{ if(k===fk) return {...p,top:a,focus:true};
     const t=k<fk?p.top-up:p.top+dn; return {...p,top:t,hidden:p.hidden||t+p.h+11<0||t>g}; });
 }
