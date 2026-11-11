@@ -170,7 +170,7 @@ function etUpdate(anim){
     <div class="note"><label>NOTE${isCur?'':' · PINNED'}</label>${isCur?`<input id="f-note" placeholder="Write this moment briefly..." value="${m.note.replace(/"/g,'&quot;')}">`:`<div class="note-ro">${m.note||'—'}</div>`}</div>`;
   const n=document.getElementById('f-note'); if(n) n.oninput=()=>EditCurrentTrack({note:n.value});
   const btn=document.getElementById('et-btn');
-  if(isCur){btn.innerHTML=ico.pin+' PIN THIS MOMENT';btn.dataset.a='pin';btn.classList.remove('ghosty')}
+  if(isCur){btn.innerHTML=ico.groove+' CARVE INTO LP';btn.dataset.a='pin';btn.classList.remove('ghosty')}
   else{btn.innerHTML='← BACK TO MOMENT '+(lp.moments.length+1);btn.dataset.a='etHome';btn.classList.add('ghosty')}
 }
 /* 핀 꽂기: 원이 별 핀으로 줄어들며 판 쪽으로 떨어짐 → 허브에서 핀이 꽂힘 */
@@ -316,6 +316,7 @@ const ico={
   close:'<svg width="15" height="15" viewBox="0 0 15 15"><path d="M1 1l13 13M14 1L1 14" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>',
   play:'<svg width="16" height="16" viewBox="0 0 16 16"><path d="M3 1.5l11 6.5-11 6.5z" fill="#fff"/></svg>',
   plane:'<svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  groove:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="1.6" style="margin-right:2px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6.5" stroke-dasharray="30 11"/><circle cx="12" cy="12" r="2" fill="#111" stroke="none"/></svg>',
   pin:'<svg width="14" height="14" viewBox="0 0 24 24" style="margin-right:2px"><path d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.6 5.6 21.1 7 14l-5.3-5 7.2-.9z" fill="#111"/></svg>',
   star:'<svg viewBox="0 0 24 24"><path d="M12 1.5l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 17.6 5.6 21.1 7 14l-5.3-5 7.2-.9z" fill="#fff"/></svg>'
 };
@@ -485,7 +486,7 @@ endTrack(){
     <div class="et-track" id="etTrack">${circles}</div>
     <div id="et-info"></div>
     ${items.length>1?`<div class="et-dots">${items.map((_,i)=>`<i data-k="${i}"></i>`).join('')}</div>`:''}
-    <button class="pill press-btn" id="et-btn" data-a="pin">${ico.pin} PIN THIS MOMENT</button>
+    <button class="pill press-btn" id="et-btn" data-a="pin">${ico.groove} CARVE INTO LP</button>
   </div>`;
 },
 
