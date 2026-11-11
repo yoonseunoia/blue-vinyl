@@ -561,3 +561,6 @@ input[type=file]{display:none}
 #s-home .sleeve.below .body{clip-path:polygon(3.5% 0,96.5% 0,100% 100%,0 100%)}
 #s-home .focus{position:absolute;left:0;right:0;margin:0;z-index:3;transition:top .75s cubic-bezier(.22,.9,.28,1),opacity .4s}
 #s-home .stack.noanim .sleeve,#s-home .stack.noanim .sleeve .body,#s-home .stack.noanim .focus{transition:none!important}
+
+/* 돌아올 때 턴테이블은 LP들이 먼저 비켜난 뒤 살짝 늦게 내려옴 */
+#s-home:not(.listed) .hero{transition:transform .95s cubic-bezier(.25,.8,.25,1) .12s,opacity .6s .12s}

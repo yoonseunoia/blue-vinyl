@@ -1000,6 +1000,10 @@ function arrivalSequence(lp){
 /* 슬리브 자리표: 위쪽 4칸은 라벨이 위(down), 아래는 라벨이 아래(up). 가운데로 갈수록 얇아져 상자 속 레코드처럼 보임 */
 const SLOTS=[{top:6,h:71,dir:'down'},{top:95,h:67,dir:'down'},{top:177,h:44,dir:'down'},{top:259,h:15,dir:'down'},{top:332,h:10,dir:'up'},
   {top:385,h:37,dir:'up'},{top:443,h:61,dir:'up'},{top:516,h:68,dir:'up'},{top:596,h:69,dir:'up'},{top:676,h:58,dir:'up'}];
+// 칸 높이는 그대로 두고, 슬리브 사이 틈을 모두 같게 다시 배치 (전체 길이는 유지)
+(()=>{ const start=SLOTS[0].top, last=SLOTS[SLOTS.length-1], end=last.top+last.h+12;
+  const gap=(end-start-SLOTS.reduce((a,n)=>a+n.h+12,0))/(SLOTS.length-1); let y=start;
+  SLOTS.forEach(n=>{ n.top=Math.round(y); y+=n.h+12+gap; }); })();
 const slotDir=k=>SLOTS[Math.min(k,SLOTS.length-1)].dir;
 const FOC={h:200,c:58};
 function homeG(){ const ph=document.getElementById('phone'); return Math.max(560,Math.min(1000,(ph&&ph.offsetHeight)||852)); }
@@ -1036,9 +1040,14 @@ function animateFrom(prev){
 function switchList(on){
   const scr=document.getElementById('s-home'); if(!scr||S.switching||S.listed===on) return;
   S.switching=true; setTimeout(()=>S.switching=false,900);
-  if(!on&&S.focus>=0){ S.layoutFrom=snapLayout(); S.focus=-1; S.listed=false; render(); app.querySelector('.screen').style.animation='none'; flyInPlanes(380); log('back to turntable'); return; }
-  S.listed=on; scr.classList.toggle('listed',on); applyLayout(true);
-  if(!on) flyInPlanes(380);
+  if(!on&&S.focus>=0){ // 펼친 LP는 접히면서 그대로 같이 내려감 (턴테이블도 위에서 날아 내려오도록 리스트 상태에서 출발)
+    S.layoutFrom=snapLayout(); S.focus=-1; render(); app.querySelector('.screen').style.animation='none'; }
+  const els=homeEls(), n=els.length;
+  // 내려갈 땐 위에서부터, 올라올 땐 아래에서부터 차례로 움직여야 서로 겹치지 않음
+  els.forEach((e,k)=>e.style.setProperty('--i',on?k:n-1-k));
+  clearTimeout(S.orderT); S.orderT=setTimeout(()=>homeEls().forEach((e,k)=>e.style.setProperty('--i',k)),1400);
+  S.listed=on; document.getElementById('s-home').classList.toggle('listed',on); applyLayout(true);
+  if(!on) flyInPlanes(420);
   if(navigator.vibrate) navigator.vibrate(6);
   log(on?'scroll → LP list':'back to turntable');
 }
