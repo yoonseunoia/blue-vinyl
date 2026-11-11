@@ -524,8 +524,8 @@ carve(){
     <svg class="cv-svg" viewBox="0 0 393 852">
       <path id="cvGroove" d="M${nx.toFixed(1)} ${ny.toFixed(1)} A${R} ${ry.toFixed(1)} 0 0 1 ${ex.toFixed(1)} ${ey.toFixed(1)}" fill="none" stroke="#d8d0c2" stroke-width="2.4" stroke-linecap="round"/>
       <g id="cvArm">
-        <line x1="420" y1="318" x2="300" y2="371" stroke="#d9d9d9" stroke-width="15" stroke-linecap="butt"/>
-        <g transform="translate(${nx+12} ${ny-52})">
+        <line x1="440" y1="396" x2="${(nx+44).toFixed(1)}" y2="${(ny-36).toFixed(1)}" stroke="#d9d9d9" stroke-width="15" stroke-linecap="butt"/>
+        <g transform="translate(${(nx-12).toFixed(1)} ${(ny-50).toFixed(1)})">
           <polygon points="0,22 26,0 52,2 30,26" fill="#7a7a7a"/>
           <polygon points="30,26 52,2 62,24 40,50" fill="#4a4a4a"/>
           <polygon points="0,22 30,26 40,50 10,48" fill="#5e5e5e"/>
@@ -776,12 +776,12 @@ const after={
     const g=document.getElementById('cvGroove'), L=g.getTotalLength(), arm=document.getElementById('cvArm');
     g.style.strokeDasharray=L; g.style.strokeDashoffset=L;
     // 바늘이 내려앉고 → 홈이 바늘 뒤로 새겨지며 길어짐 → 바늘이 들림
-    arm.animate([{transform:'translate(30px,-40px)',opacity:0},{transform:'translate(0,-10px)',opacity:1,offset:.6},{transform:'none'}],{duration:1100,easing:'cubic-bezier(.3,0,.2,1)',fill:'backwards'});
+    arm.animate([{transform:'translate(70px,-60px)'},{transform:'translate(0,-12px)',offset:.65},{transform:'none'}],{duration:1100,easing:'cubic-bezier(.3,0,.2,1)',fill:'backwards'});
     timers.push(setTimeout(()=>{ if(navigator.vibrate) navigator.vibrate(10); },1100));
     g.animate([{strokeDashoffset:L},{strokeDashoffset:0}],{duration:3200,delay:1100,easing:'cubic-bezier(.3,0,.3,1)',fill:'forwards'});
     const cap=app.querySelector('.cv-cap'); cap.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:800,delay:1400,fill:'backwards'});
     timers.push(setTimeout(()=>{ if(S.screen!=='carve') return;
-      arm.animate([{transform:'none'},{transform:'translate(26px,-34px)',opacity:0}],{duration:700,easing:'ease-in',fill:'forwards'});
+      arm.animate([{transform:'none'},{transform:'translate(14px,-16px)'}],{duration:700,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'});
       timers.push(setTimeout(()=>{ if(S.screen==='carve') go('hub','Carved'); },900));
     },1100+3200+500));
   },
