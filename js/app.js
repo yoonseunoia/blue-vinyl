@@ -1019,7 +1019,7 @@ function homeLayout(count){
   return base.map((p,k)=>{ if(k===fk) return {...p,top:a,focus:true};
     const t=k<fk?p.top-up:p.top+dn; return {...p,top:t,hidden:p.hidden||t+p.h+11<0||t>g}; });
 }
-function homeOff(){ return document.getElementById('hParcel')?508:350; }   // 도착 소포가 있을 때만 자리를 넓게
+function homeOff(){ return document.getElementById('hParcel')?508:404; }   // 도착 소포가 있을 때만 자리를 넓게
 function homeEls(){ return [...app.querySelectorAll('#stack > .sleeve, #stack > .focus')]; }
 function applyLayout(anim=true){
   const st=document.getElementById('stack'); if(!st) return;
