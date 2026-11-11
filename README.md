@@ -15,4 +15,12 @@ Open it on a phone for the full-screen experience. The capture screen asks for c
 - Finish → choose cover → press → delivery (in transit / arrived / unboxing)
 - Playback: one moment, or a chronological slideshow
 
-The whole prototype lives in a single `index.html`.
+## Files
+
+```
+index.html      page skeleton (fonts, phone frame, file inputs)
+css/style.css   all styles, grouped by screen
+js/app.js       state, screens and interactions
+```
+
+To change how something looks, edit `css/style.css`. To change what happens on a tap or swipe, edit `js/app.js`.
