@@ -368,6 +368,7 @@ home(){
         <div class="title"><div class="serif">${lp.city||'New Journey'}</div><span>${lp.date}</span></div>
         ${lp.shared?`<div class="wip shared">✈ FROM @${lp.shared.owner.toUpperCase()}</div>`:''}
         ${line}
+        <button class="lp-del" data-a="askDelete" data-i="${i}" aria-label="Delete this record"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 12.5h9l1-12.5M10 11v5.5M14 11v5.5"/></svg></button>
       </div>`;}
     const pos=(fpos<0||dp<fpos)?'above':'below';
     const st=status(lp);
@@ -430,8 +431,8 @@ newIntro(){
     <div class="i-head" id="iHead"><div class="serif">New Journey</div>${S.introReturn?"<small>Your LP is ready</small>":""}</div>
     <div class="i-vinyl vinyl" id="iV" data-a="introMoment"><div class="hole"></div></div>
     <div class="i-sleeve" id="iS" data-a="introInfo"><b>${S.currentLP.name||S.currentLP.city||'New Journey'}</b><small>${S.currentLP.date||'BLANK LP'} · SIDE A</small></div>
-    <button class="i-opt info" id="oInfo" data-a="introInfo"><b>Information</b><span>Name, dates, places</span></button>
-    <button class="i-opt mom" id="oMom" data-a="introMoment"><b>Moment</b><span>Record the first one</span></button>
+    <button class="i-opt info" id="oInfo" data-a="introInfo"><b>Information</b></button>
+    <button class="i-opt mom" id="oMom" data-a="introMoment"><b>Moment</b></button>
   </div>`;
   return `<div class="screen" id="s-intro" data-a="skipIntro">
     <div class="i-vinyl vinyl" id="iV"><div class="hole"></div></div>
@@ -1193,6 +1194,18 @@ function saveInfo(){
 }
 const A={
   focus:el=>focusLP(+el.dataset.i),
+  askDelete:el=>{ const i=+el.dataset.i, lp=S.lps[i]; if(!lp) return;
+    const ov=document.createElement('div'); ov.className='del-ov'; ov.id='delOv';
+    ov.innerHTML=`<div class="del-card"><b>Delete “${lp.city||'New Journey'}”?</b><p>${lp.moments.length} moment${lp.moments.length===1?'':'s'} will be removed. This can’t be undone.</p>
+      <div class="del-btns"><button data-a="cancelDelete">Cancel</button><button class="danger" data-a="confirmDelete" data-i="${i}">Delete</button></div></div>`;
+    app.querySelector('.screen').appendChild(ov); requestAnimationFrame(()=>ov.classList.add('show')); },
+  cancelDelete:()=>{ const ov=document.getElementById('delOv'); if(!ov) return; ov.classList.remove('show'); setTimeout(()=>ov.remove(),250) },
+  confirmDelete:el=>{ const i=+el.dataset.i, lp=S.lps[i]; const ov=document.getElementById('delOv'); ov&&ov.classList.remove('show');
+    const f=app.querySelector('.focus');
+    const finish=()=>{ S.lps.splice(i,1); if(S.currentLP===lp) S.currentLP=null; if(S.playing===lp) S.playing=null;
+      S.focus=-1; log('delete LP '+(lp.city||'New Journey')); render(); };
+    if(f) f.animate([{opacity:1,transform:'scale(1)'},{opacity:0,transform:'scale(.9) translateY(20px)'}],{duration:450,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'}).onfinish=finish;
+    else finish(); },
   openLP,
   newLP:NewLP,
   skipIntro:finishIntro,
@@ -1280,8 +1293,12 @@ document.getElementById('fileVideo').onchange=e=>{const f=e.target.files[0];e.ta
 S.scale=1; S.introPlayed=true; /* 인트로(부팅 화면) 사용 안 함 */
 function fit(){
   const ph=document.getElementById('phone'), W=window.innerWidth, H=window.innerHeight;
-  if(W<=520){ const sc=W/393; S.scale=sc; ph.style.width='393px'; ph.style.height=(H/sc)+'px'; ph.style.transform=`scale(${sc})`; }
-  else { S.scale=1; ph.style.width=ph.style.height=ph.style.transform=''; }
+  if(W<=520){
+    /* 폭에 맞추되, 세로가 너무 짧은 폰(주소창 있는 SE 등)은 화면 전체가 들어오도록 조금 더 줄이고 가운데 정렬 */
+    const MIN_H=660; let sc=W/393, left=0;
+    if(H/sc<MIN_H){ sc=H/MIN_H; left=(W-393*sc)/2; }
+    S.scale=sc; ph.style.width='393px'; ph.style.height=(H/sc)+'px'; ph.style.left=left+'px'; ph.style.transform=`scale(${sc})`; }
+  else { S.scale=1; ph.style.width=ph.style.height=ph.style.transform=ph.style.left=''; }
 }
 fit(); window.addEventListener('resize',fit);
 render();

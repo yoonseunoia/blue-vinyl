@@ -8,7 +8,7 @@
 html,body{height:100%;background:#e9e9ee;font-family:var(--sans);color:#fff;overflow:hidden}
 body{display:flex;align-items:center;justify-content:center}
 #phone{position:relative;width:393px;height:852px;border-radius:44px;overflow:hidden;background:var(--bg);box-shadow:0 30px 80px rgba(20,20,40,.35)}
-@media (max-width:520px){ html,body{overflow:hidden;overscroll-behavior:none;background:#545C86} body{display:block} #phone{position:fixed;left:0;top:0;border-radius:0;box-shadow:none;overflow:clip;transform-origin:0 0} }
+@media (max-width:520px){ html,body{overflow:hidden;overscroll-behavior:none;background:var(--bg)} body{display:block} #phone{position:fixed;left:0;top:0;border-radius:0;box-shadow:none;overflow:clip;transform-origin:0 0} }
 #app{position:absolute;inset:0;-webkit-user-select:none;user-select:none}
 #app input{-webkit-user-select:text;user-select:text}
 .screen{position:absolute;inset:0;overflow:hidden;animation:fadeIn .6s ease}
@@ -531,3 +531,16 @@ input[type=file]{display:none}
 .rc-np span{display:flex;flex-direction:column;line-height:1.25;overflow:hidden}
 .rc-np small{font-size:8px;letter-spacing:.18em;opacity:.6}
 .rc-np b{font-weight:500;font-size:12px;overflow:hidden;text-overflow:ellipsis}
+
+/* LP 삭제 */
+.focus .lp-del{position:absolute;right:26px;top:212px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;opacity:.5;transition:opacity .2s,background .2s}
+.focus .lp-del:hover,.focus .lp-del:active{opacity:1;background:rgba(255,255,255,.1)}
+.del-ov{position:absolute;inset:0;z-index:60;background:rgba(10,11,20,.55);display:flex;align-items:flex-end;justify-content:center;padding:0 16px 34px;opacity:0;transition:opacity .25s}
+.del-ov.show{opacity:1}
+.del-card{width:100%;background:#22243a;border-radius:20px;padding:22px 20px 16px;text-align:center;transform:translateY(24px);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.del-ov.show .del-card{transform:none}
+.del-card b{font-family:var(--serif);font-size:18px;font-weight:600}
+.del-card p{font-size:12px;opacity:.65;margin:8px 0 18px;line-height:1.5}
+.del-btns{display:flex;gap:10px}
+.del-btns button{flex:1;height:46px;border-radius:999px;background:rgba(255,255,255,.1);font-size:14px;font-weight:500}
+.del-btns .danger{background:#e5484d;color:#fff}
