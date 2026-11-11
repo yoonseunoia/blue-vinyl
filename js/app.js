@@ -64,6 +64,8 @@ function captureFeedback(then){
   v.animate([{transform:'none'},{transform:'scale(.9)'},{transform:'scale(1.02)'},{transform:'none'}],{duration:520,easing:'ease-out'});
   fl.animate([{opacity:0},{opacity:.9,offset:.25},{opacity:0}],{duration:600}).onfinish=then;
 }
+/* 지금 듣는 노래 (실제 앱에서는 Spotify 'currently playing' API 등으로 가져옴 · 여기선 최근 재생 기록 첫 곡) */
+function nowPlaying(){ return S.nowPlaying||SONGS.recent[0]; }
 function startVideo(){
   if(S.recording) return;
   S.recording=true; S.recStart=Date.now(); S.recChunks=[]; if(navigator.vibrate) navigator.vibrate(10);
@@ -79,7 +81,7 @@ function startVideo(){
 function stopVideo(){
   if(!S.recording) return; S.recording=false;
   const sec=Math.max(1,Math.round((Date.now()-S.recStart)/1000));
-  const finish=(url,type)=>{ S.currentTrack.type=type; S.currentTrack.url=url; S.currentTrack.duration=sec; log('RecordVideo '+sec+'s'+(type==='video'?'':' (simulated)'));
+  const finish=(url,type)=>{ S.currentTrack.type=type; S.currentTrack.url=url; S.currentTrack.duration=sec; const np=nowPlaying(); S.currentTrack.song={t:np.t,a:np.a,c:np.c}; log('RecordVideo '+sec+'s'+(type==='video'?'':' (simulated)'));
     const cam=app.querySelector('.rc-cam'); if(cam&&type==='photo') cam.style.backgroundImage=`url(${url})`;
     captureFeedback(()=>{S.fromCapture=true;EndCurrentTrack()}); };
   if(S.recorder){ const r=S.recorder; S.recorder=null;
@@ -185,7 +187,11 @@ function PinMoment(){
     {transform:'scale(1.4)',opacity:1,offset:.35},
     {transform:'scale(1)',offset:.5},
     {transform:'translateY(520px) scale(.8)',opacity:1,offset:1}
-  ],{duration:1300,easing:'cubic-bezier(.5,0,.6,1)',fill:'forwards'}).onfinish=()=>{star.remove();S.justPinned=true;CommitTrack()};
+  ],{duration:1300,easing:'cubic-bezier(.5,0,.6,1)',fill:'forwards'}).onfinish=()=>{ star.remove();
+    // 판에 새기는 장면으로: 커팅 헤드가 홈을 새긴 뒤 허브로
+    S.currentLP.moments.push(S.currentTrack); S.currentTrack=null;
+    S.carveK=S.currentLP.moments.length; S.justPinned=true; S.skipCarve=true;
+    log('PinMoment → carve moment '+S.carveK); go('carve','Carve into LP'); };
 }
 function CommitTrack(){
   S.currentLP.moments.push(S.currentTrack); log('PinMoment (moment '+S.currentLP.moments.length+')');
@@ -397,11 +403,11 @@ hub(){
   const lp=S.currentLP, n=lp.moments.length;
   // 모먼트마다 판의 서로 다른 홈(반지름)에 핀이 꽂히고, 그 홈이 흰 줄로 새겨짐
   const pinPos=k=>({deg:(-55+k*27)%110, r:165+(k%9)*15});
-  const fresh=S.justPinned?n-1:-1;
+  const fresh=S.justPinned?n-1:-1, carveHere=fresh>=0&&!S.skipCarve; S.skipCarve=false;
   const dots=lp.moments.map((m,k)=>{const {deg,r}=pinPos(k), a=deg*Math.PI/180, foot=r+3;
     return `<div class="hpin ${k===fresh?'drop':''}" style="left:${35.5+foot*Math.cos(a)}px;top:${379.5+foot*Math.sin(a)}px">${pinThumb(lp,m,k)}<div class="stem"></div><div class="foot"></div></div>`}).join('');
   const grooves=`<svg class="hub-grooves" viewBox="0 0 607 607">${lp.moments.map((m,k)=>{const {deg,r}=pinPos(k);
-    return `<circle class="groove ${k===fresh?'carve':''}" cx="303.5" cy="303.5" r="${r}" transform="rotate(${deg} 303.5 303.5)" style="--len:${(2*Math.PI*r).toFixed(1)}"/>`}).join('')}</svg>`;
+    return `<circle class="groove ${k===fresh&&carveHere?'carve':''}" cx="303.5" cy="303.5" r="${r}" transform="rotate(${deg} 303.5 303.5)" style="--len:${(2*Math.PI*r).toFixed(1)}"/>`}).join('')}</svg>`;
   S.justPinned=false;
   return `<div class="screen" id="s-hub">
     <div class="topbar"><button class="icon-btn" data-a="hubBack">${ico.back}</button><button class="hub-finish ${n?'':'off'}" data-a="${n?'finish':'finishLocked'}">Finish</button></div>
@@ -458,6 +464,7 @@ record(){
   return `<div class="screen" id="s-record">
     <div class="topbar"><button class="icon-btn" data-a="recBack">${ico.back}</button></div>
     <div class="rc-head"><div class="serif">${lp.city||'New Journey'}</div><div>MOMENT ${lp.moments.length+1}</div></div>
+    <div class="rc-np ${S.recording?'live':''}"><i class="d" style="background:${discBg(nowPlaying())}"></i><span><small>NOW PLAYING</small><b>${nowPlaying().t} · ${nowPlaying().a}</b></span></div>
     <div class="rc-take" id="rcTake">${S.recording?'00:00 / 00:15':'TAKE A MOMENT'}</div>
     <svg class="rc-ring" viewBox="0 0 320 320"><circle cx="160" cy="160" r="152" fill="none" stroke="rgba(255,255,255,.55)" stroke-width="1"/>
       <circle id="rcProg" cx="160" cy="160" r="152" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="0 955" transform="rotate(-90 160 160)" opacity="${S.recording?1:0}"/>
@@ -502,6 +509,30 @@ cover(){
     <div class="cv-opts">${opts}</div>
     ${photos.length?'':`<div class="cv-note">사진 모먼트가 없어서 이 여행의 색으로 재킷을 만들어요</div>`}
     <button class="pill press-btn" data-a="toPress">PRESS INTO LP</button>
+  </div>`;
+},
+
+/* ---------------- CARVE: 핀을 꽂으면 커팅 헤드가 판에 홈을 새김 ---------------- */
+carve(){
+  // 비스듬히 누운 판: 중심 (0,440), 가로 반지름 375, 세로 146 (기울기 0.389)
+  const RX=375, RY=146, cx=0, cy=440, R=275, ry=R*RY/RX;
+  const pt=t=>[cx+R*Math.cos(t*Math.PI/180), cy+ry*Math.sin(t*Math.PI/180)];
+  const [nx,ny]=pt(27), [ex,ey]=pt(178);
+  return `<div class="screen" id="s-carve">
+    <div class="cv-disc"><div class="cv-edge"></div><div class="cv-top"><div class="cv-lbl"></div><div class="cv-hole"></div><div class="cv-sheen"></div></div></div>
+    <svg class="cv-svg" viewBox="0 0 393 852">
+      <path id="cvGroove" d="M${nx.toFixed(1)} ${ny.toFixed(1)} A${R} ${ry.toFixed(1)} 0 0 1 ${ex.toFixed(1)} ${ey.toFixed(1)}" fill="none" stroke="#d8d0c2" stroke-width="2.4" stroke-linecap="round"/>
+      <g id="cvArm">
+        <line x1="420" y1="318" x2="300" y2="371" stroke="#d9d9d9" stroke-width="15" stroke-linecap="butt"/>
+        <g transform="translate(${nx+12} ${ny-52})">
+          <polygon points="0,22 26,0 52,2 30,26" fill="#7a7a7a"/>
+          <polygon points="30,26 52,2 62,24 40,50" fill="#4a4a4a"/>
+          <polygon points="0,22 30,26 40,50 10,48" fill="#5e5e5e"/>
+        </g>
+        <line id="cvNeedle" x1="${nx}" y1="${ny-3}" x2="${nx}" y2="${ny+11}" stroke="#d94a3a" stroke-width="2.4"/>
+      </g>
+    </svg>
+    <div class="cv-cap"><span class="reel"><i></i><i></i></span><b>moment${S.carveK||1}</b></div>
   </div>`;
 },
 
@@ -738,6 +769,20 @@ const after={
         timers.push(requestAnimationFrame(loop)); };
       loop();
     }
+  },
+  carve(){
+    clearTimers();
+    const g=document.getElementById('cvGroove'), L=g.getTotalLength(), arm=document.getElementById('cvArm');
+    g.style.strokeDasharray=L; g.style.strokeDashoffset=L;
+    // 바늘이 내려앉고 → 홈이 바늘 뒤로 새겨지며 길어짐 → 바늘이 들림
+    arm.animate([{transform:'translate(30px,-40px)',opacity:0},{transform:'translate(0,-10px)',opacity:1,offset:.6},{transform:'none'}],{duration:1100,easing:'cubic-bezier(.3,0,.2,1)',fill:'backwards'});
+    timers.push(setTimeout(()=>{ if(navigator.vibrate) navigator.vibrate(10); },1100));
+    g.animate([{strokeDashoffset:L},{strokeDashoffset:0}],{duration:3200,delay:1100,easing:'cubic-bezier(.3,0,.3,1)',fill:'forwards'});
+    const cap=app.querySelector('.cv-cap'); cap.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:800,delay:1400,fill:'backwards'});
+    timers.push(setTimeout(()=>{ if(S.screen!=='carve') return;
+      arm.animate([{transform:'none'},{transform:'translate(26px,-34px)',opacity:0}],{duration:700,easing:'ease-in',fill:'forwards'});
+      timers.push(setTimeout(()=>{ if(S.screen==='carve') go('hub','Carved'); },900));
+    },1100+3200+500));
   },
   endTrack(){
     clearTimers(); S.etIdx=0; etUpdate(false);

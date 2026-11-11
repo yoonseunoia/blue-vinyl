@@ -506,3 +506,27 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 #log{position:absolute;left:10px;right:10px;top:28px;z-index:50;background:rgba(0,0,0,.8);border-radius:10px;padding:10px;font:10px/1.5 ui-monospace,Menlo,monospace;color:#cfe;max-height:180px;overflow:auto;display:none}
 #log.show{display:block}
 input[type=file]{display:none}
+
+/* ---------- CARVE ---------- */
+#s-carve{background:var(--bg)}
+.cv-disc{position:absolute;left:-375px;top:294px;width:750px;height:292px}
+.cv-edge{position:absolute;inset:0;top:14px;border-radius:50%;background:#161618;box-shadow:0 26px 40px rgba(0,0,0,.25)}
+.cv-top{position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(ellipse at 50% 50%,#252528 0 3px,#29292c 3px 5px);overflow:hidden}
+.cv-lbl{position:absolute;left:50%;top:50%;width:262px;height:102px;transform:translate(-50%,-50%);border-radius:50%;background:#38373c}
+.cv-hole{position:absolute;left:50%;top:50%;width:28px;height:11px;transform:translate(-50%,-50%);border-radius:50%;background:#000}
+.cv-sheen{position:absolute;inset:0;border-radius:50%;background:linear-gradient(100deg,transparent 40%,rgba(255,255,255,.05) 50%,transparent 60%);background-size:200% 100%;animation:cvSheen 2.6s linear infinite}
+@keyframes cvSheen{from{background-position:120% 0}to{background-position:-80% 0}}
+.cv-svg{position:absolute;left:0;top:0;width:393px;height:852px;pointer-events:none}
+#cvArm{filter:drop-shadow(0 8px 10px rgba(0,0,0,.35))}
+.cv-cap{position:absolute;right:32px;top:612px;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.cv-cap b{font-weight:400;font-size:17px;letter-spacing:.02em}
+.cv-cap .reel{display:flex;gap:10px;margin-right:6px}
+.cv-cap .reel i{width:11px;height:11px;border:2px solid #fff;border-radius:50%;position:relative;animation:spin 2s linear infinite}
+.cv-cap .reel i::after{content:'';position:absolute;left:50%;top:-3px;width:2px;height:4px;margin-left:-1px;background:#fff}
+/* ---------- NOW PLAYING (record) ---------- */
+.rc-np{position:absolute;left:50%;top:116px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:7px 14px 7px 8px;border-radius:999px;background:rgba(255,255,255,.12);white-space:nowrap;max-width:300px}
+.rc-np .d{width:24px;height:24px;border-radius:50%;flex:none}
+.rc-np.live .d{animation:spin 2.4s linear infinite}
+.rc-np span{display:flex;flex-direction:column;line-height:1.25;overflow:hidden}
+.rc-np small{font-size:8px;letter-spacing:.18em;opacity:.6}
+.rc-np b{font-weight:500;font-size:12px;overflow:hidden;text-overflow:ellipsis}
