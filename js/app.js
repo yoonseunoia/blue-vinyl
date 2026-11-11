@@ -1295,7 +1295,7 @@ function fit(){
   const ph=document.getElementById('phone'), W=window.innerWidth, H=window.innerHeight;
   if(W<=520){
     /* 폭에 맞추되, 세로가 너무 짧은 폰(주소창 있는 SE 등)은 화면 전체가 들어오도록 조금 더 줄이고 가운데 정렬 */
-    const MIN_H=660; let sc=W/393, left=0;
+    const MIN_H=700; let sc=W/393, left=0;
     if(H/sc<MIN_H){ sc=H/MIN_H; left=(W-393*sc)/2; }
     S.scale=sc; ph.style.width='393px'; ph.style.height=(H/sc)+'px'; ph.style.left=left+'px'; ph.style.transform=`scale(${sc})`; }
   else { S.scale=1; ph.style.width=ph.style.height=ph.style.transform=ph.style.left=''; }

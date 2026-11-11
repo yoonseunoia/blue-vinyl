@@ -260,13 +260,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .rc-lbl{position:absolute;left:-50px;top:-8px;width:100px;text-align:center;font-size:14px;letter-spacing:.24em;font-weight:500;opacity:.45;cursor:pointer;transform-origin:50px 8px;transition:transform .55s cubic-bezier(.3,1.3,.5,1),opacity .3s}
 .rc-lbl.on{opacity:1}
 .rc-lbl.far{opacity:0;pointer-events:none}
-.rc-btn{position:absolute;left:50%;bottom:92px;width:96px;height:96px;margin-left:-48px;border-radius:50%;display:grid;place-items:center;z-index:5}
+.rc-btn{position:absolute;left:50%;top:max(560px,calc(100% - 188px));width:96px;height:96px;margin-left:-48px;border-radius:50%;display:grid;place-items:center;z-index:5}
 .rc-btn .vinyl{position:absolute;inset:0;box-shadow:0 8px 20px rgba(0,0,0,.35)}
 .rc-btn .vinyl::after{display:none}
 .rc-btn i{position:relative;width:48px;height:48px;border-radius:50%;background:#d93b2e;transition:all .3s}
 .rc-btn.recording .vinyl{animation:spin 2.4s linear infinite}
 .rc-btn.recording i{width:30px;height:30px;border-radius:5px}
-.rc-btn-cap{position:absolute;left:0;right:0;bottom:66px;text-align:center;font-size:11px;letter-spacing:.16em;opacity:.85}
+.rc-btn-cap{position:absolute;left:0;right:0;top:calc(max(560px,calc(100% - 188px)) + 108px);text-align:center;font-size:11px;letter-spacing:.16em;opacity:.85}
 /* ---------- END TRACK ---------- */
 .et-head{position:absolute;top:34px;left:34px;right:34px;display:flex;justify-content:space-between;align-items:baseline}
 .et-head .serif{font-size:22px;font-weight:700}
