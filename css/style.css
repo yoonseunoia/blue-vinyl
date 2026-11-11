@@ -564,3 +564,8 @@ input[type=file]{display:none}
 
 /* 돌아올 때 턴테이블은 LP들이 먼저 비켜난 뒤 살짝 늦게 내려옴 */
 #s-home:not(.listed) .hero{transition:transform .95s cubic-bezier(.25,.8,.25,1) .12s,opacity .6s .12s}
+
+/* 펼친 LP: 커버와 제목 사이 여백을 맞춤 */
+#s-home .focus .title{top:234px}
+#s-home .focus .wip{top:266px}
+#s-home .focus .lp-del{top:226px}

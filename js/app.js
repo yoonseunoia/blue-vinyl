@@ -1005,7 +1005,7 @@ const SLOTS=[{top:6,h:71,dir:'down'},{top:95,h:67,dir:'down'},{top:177,h:44,dir:
   const gap=(end-start-SLOTS.reduce((a,n)=>a+n.h+12,0))/(SLOTS.length-1); let y=start;
   SLOTS.forEach(n=>{ n.top=Math.round(y); y+=n.h+12+gap; }); })();
 const slotDir=k=>SLOTS[Math.min(k,SLOTS.length-1)].dir;
-const FOC={h:200,c:58};
+const FOC={h:200,c:52};
 function homeG(){ const ph=document.getElementById('phone'); return Math.max(560,Math.min(1000,(ph&&ph.offsetHeight)||852)); }
 function slotPos(k,off){ const n=SLOTS[Math.min(k,SLOTS.length-1)], r=homeG()/799; return {top:n.top*r+off,h:Math.max(8,Math.round(n.h*r)),dir:n.dir,hidden:k>=SLOTS.length}; }
 function focusTop(k,off=43){ const n=slotPos(k,off), g=homeG(), c=n.top+(n.h+11)/2; return Math.max(70,Math.min(g-FOC.h-FOC.c-24,c-FOC.h/2)); }
@@ -1013,7 +1013,8 @@ function homeLayout(count){
   const off=S.listed?43:508, base=Array.from({length:count},(_,k)=>slotPos(k,off));
   const fk=S.focus>=0?S.lps.length-S.focus:-1;           // 펼친 LP의 칸 번호 (0번은 Add)
   if(fk<0||!S.listed) return base;
-  const g=homeG(), sel=base[fk], a=focusTop(fk), up=Math.max(0,sel.top-a)+10, dn=Math.max(0,a+FOC.h+FOC.c-(sel.top+sel.h+11))+10;
+  const flp=S.lps[S.focus], extra=(status(flp)!=='collection'||flp.shared)?24:0;  // 제목 아래 상태 줄이 있으면 그만큼 더 띄움
+  const g=homeG(), sel=base[fk], a=focusTop(fk), up=Math.max(0,sel.top-a)+10, dn=Math.max(0,a+FOC.h+FOC.c+extra-(sel.top+sel.h+11))+10;
   return base.map((p,k)=>{ if(k===fk) return {...p,top:a,focus:true};
     const t=k<fk?p.top-up:p.top+dn; return {...p,top:t,hidden:p.hidden||t+p.h+11<0||t>g}; });
 }
