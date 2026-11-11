@@ -569,3 +569,9 @@ input[type=file]{display:none}
 #s-home .focus .title{top:234px}
 #s-home .focus .wip{top:266px}
 #s-home .focus .lp-del{top:226px}
+
+/* 지나가는 종이비행기 (평소엔 숨어 있음) */
+#s-home .planes{left:0;top:0;width:110px;height:80px;visibility:hidden;z-index:4}
+#s-home .planes.flying{visibility:visible}
+#s-home .planes .p1{right:auto;left:40px;top:0}
+#s-home .planes .p2{left:0;top:36px;width:40px;transform:rotate(-12deg);animation:float 4.6s ease-in-out .6s infinite;opacity:.9}

@@ -217,6 +217,7 @@ const SHARED=[
 ];
 const paperPlaneSVG=`<svg viewBox="0 0 64 44"><polygon points="2,24 62,2 26,32" fill="#f4f0e6"/><polygon points="26,32 62,2 32,42" fill="#d9d3c4"/><polygon points="26,32 32,42 28,30" fill="#bfb8a8"/></svg>`;
 function PaperAirplane(){
+  if(S.planeAnim) S.planeAnim.pause(); clearTimeout(S.planeT);
   if(document.getElementById('paOv')) return;
   S.shIdx=((S.shIdx??-1)+1)%SHARED.length; const sh=SHARED[S.shIdx];
   S.shared={...sh,id:'sh'+Date.now()+S.shIdx,name:sh.city,finished:true,status:'collection',shared:{owner:sh.owner},
@@ -269,7 +270,7 @@ function closePaperAirplane(mode){
   const ov=document.getElementById('paOv'); if(!ov) return;
   const card=document.getElementById('paCard'), pl=document.getElementById('paPlane'), cap=document.getElementById('paCap'), btns=document.getElementById('paBtns');
   [cap,btns].forEach(e=>e.animate([{opacity:1},{opacity:0}],{duration:300,fill:'forwards'}));
-  const done=()=>{ov.remove(); const p=app.querySelector('.planes'); if(p){p.style.visibility='';flyInPlanes(0)}};
+  const done=()=>{ov.remove(); stopPlane(); const p=app.querySelector('.planes'); if(p) p.style.visibility=''; schedulePlane(6000);};
   ov.animate([{background:'rgba(12,13,24,.45)'},{background:'rgba(12,13,24,0)'}],{duration:900,delay:300,fill:'forwards'});
   if(mode==='discard'){ // 다시 접혀서 비행기가 되어 날아감
     card.animate([{transform:'translateY(-120px)',opacity:1},{transform:'translateY(-120px) scale(.15,.05) rotate(14deg)',opacity:0}],{duration:500,easing:'ease-in',fill:'forwards'});
@@ -665,7 +666,7 @@ const after={
       else requestAnimationFrame(()=>requestAnimationFrame(()=>{arm.classList.toggle('down',down);arm.classList.toggle('up',!down)}));
       S.armPrev=down; }
     if(!S.introPlayed){ S.introPlayed=true; homeIntro(); }
-    else if(S.enteredScreen&&!S.skipPlaneFly&&!S.listed) flyInPlanes(450);
+    else if(S.enteredScreen&&!S.skipPlaneFly&&!S.listed) schedulePlane(1200);
     S.skipPlaneFly=false;
     const hp=document.getElementById('hParcel');
     if(hp&&hp.classList.contains('fresh')&&!S.listed) heroArrival(S.lps[+hp.dataset.i],hp);
@@ -1010,7 +1011,7 @@ function homeG(){ const ph=document.getElementById('phone'); return Math.max(560
 function slotPos(k,off){ const n=SLOTS[Math.min(k,SLOTS.length-1)], r=homeG()/799; return {top:n.top*r+off,h:Math.max(8,Math.round(n.h*r)),dir:n.dir,hidden:k>=SLOTS.length}; }
 function focusTop(k,off=43){ const n=slotPos(k,off), g=homeG(), c=n.top+(n.h+11)/2; return Math.max(70,Math.min(g-FOC.h-FOC.c-24,c-FOC.h/2)); }
 function homeLayout(count){
-  const off=S.listed?43:508, base=Array.from({length:count},(_,k)=>slotPos(k,off));
+  const off=S.listed?43:homeOff(), base=Array.from({length:count},(_,k)=>slotPos(k,off));
   const fk=S.focus>=0?S.lps.length-S.focus:-1;           // 펼친 LP의 칸 번호 (0번은 Add)
   if(fk<0||!S.listed) return base;
   const flp=S.lps[S.focus], extra=(status(flp)!=='collection'||flp.shared)?24:0;  // 제목 아래 상태 줄이 있으면 그만큼 더 띄움
@@ -1018,11 +1019,13 @@ function homeLayout(count){
   return base.map((p,k)=>{ if(k===fk) return {...p,top:a,focus:true};
     const t=k<fk?p.top-up:p.top+dn; return {...p,top:t,hidden:p.hidden||t+p.h+11<0||t>g}; });
 }
+function homeOff(){ return document.getElementById('hParcel')?508:350; }   // 도착 소포가 있을 때만 자리를 넓게
 function homeEls(){ return [...app.querySelectorAll('#stack > .sleeve, #stack > .focus')]; }
 function applyLayout(anim=true){
   const st=document.getElementById('stack'); if(!st) return;
   const els=homeEls(), L=homeLayout(els.length);
   if(!anim) st.classList.add('noanim');
+  const hero=st.querySelector('.hero'); if(hero) hero.style.height=(homeOff()-8)+'px';
   els.forEach((el,k)=>{ const p=L[k];
     el.style.top=(el.classList.contains('focus')?p.top-10:p.top)+'px';
     el.style.opacity=p.hidden?0:''; el.style.pointerEvents=p.hidden?'none':'';
@@ -1048,7 +1051,7 @@ function switchList(on){
   els.forEach((e,k)=>e.style.setProperty('--i',on?k:n-1-k));
   clearTimeout(S.orderT); S.orderT=setTimeout(()=>homeEls().forEach((e,k)=>e.style.setProperty('--i',k)),1400);
   S.listed=on; document.getElementById('s-home').classList.toggle('listed',on); applyLayout(true);
-  if(!on) flyInPlanes(420);
+  if(on) stopPlane(); else schedulePlane(1500);
   if(navigator.vibrate) navigator.vibrate(6);
   log(on?'scroll → LP list':'back to turntable');
 }
@@ -1069,21 +1072,26 @@ function bindListGesture(st){
   st.addEventListener('pointerup',()=>y0=null);
 }
 /* 종이비행기 두 대가 화면 밖에서 곡선을 그리며 날아와 자리에 내려앉음 (코 방향으로 진행) */
-function flyInPlanes(delay=0){
-  const p1=app.querySelector('.planes .p1'), p2=app.querySelector('.planes .p2'); const out=[];
-  if(p1) out.push(p1.animate([
-    {transform:'translate(-300px,180px) rotate(-4deg) scale(.8)',opacity:0},
-    {transform:'translate(-210px,90px) rotate(-14deg) scale(.88)',opacity:1,offset:.25},
-    {transform:'translate(-90px,-34px) rotate(-30deg) scale(.96)',offset:.6},
-    {transform:'translate(10px,-14px) rotate(-2deg)',offset:.85},
-    {transform:'rotate(-8deg)',opacity:1}],{duration:1900,delay,easing:'cubic-bezier(.35,.1,.25,1)',fill:'backwards'}));
-  if(p2) out.push(p2.animate([
-    {transform:'translate(260px,200px) scaleX(-1) rotate(0deg) scale(.8)',opacity:0},
-    {transform:'translate(170px,110px) scaleX(-1) rotate(-10deg) scale(.88)',opacity:1,offset:.25},
-    {transform:'translate(70px,-30px) scaleX(-1) rotate(-28deg) scale(.96)',offset:.6},
-    {transform:'translate(-8px,-12px) scaleX(-1) rotate(-6deg)',offset:.85},
-    {transform:'scaleX(-1) rotate(-14deg)',opacity:1}],{duration:2100,delay:delay+350,easing:'cubic-bezier(.35,.1,.25,1)',fill:'backwards'}));
-  return out;
+/* 종이비행기: 가끔 화면을 가로질러 날아가고, 그 사이에 잡지(탭하지) 못하면 그냥 지나가 버림 */
+function flyInPlanes(delay=0){ schedulePlane(delay); return []; }
+function schedulePlane(delay){
+  clearTimeout(S.planeT); S.planeT=setTimeout(flyAcross,delay);
+}
+function stopPlane(){ clearTimeout(S.planeT); if(S.planeAnim){ S.planeAnim.cancel(); S.planeAnim=null; } const p=app.querySelector('.planes'); if(p) p.classList.remove('flying'); }
+function flyAcross(){
+  const pl=app.querySelector('.planes');
+  if(!pl||S.screen!=='home'||S.listed||document.getElementById('paOv')) return;
+  const ltr=Math.random()<.5, y0=180+Math.random()*120, rise=60+Math.random()*80;   // 방향과 높이를 매번 조금씩 다르게
+  const X=ltr?[-170,40,230,430]:[430,230,40,-170], f=ltr?'':' scaleX(-1)';
+  pl.classList.add('flying');
+  S.planeAnim=pl.animate([
+    {transform:`translate(${X[0]}px,${y0}px)${f} rotate(4deg)`},
+    {transform:`translate(${X[1]}px,${y0-rise*.45}px)${f} rotate(-8deg)`,offset:.33},
+    {transform:`translate(${X[2]}px,${y0-rise*.55}px)${f} rotate(2deg)`,offset:.66},
+    {transform:`translate(${X[3]}px,${y0-rise}px)${f} rotate(-10deg)`}
+  ],{duration:7200,easing:'linear'});
+  S.planeAnim.onfinish=()=>{ pl.classList.remove('flying'); S.planeAnim=null; log('paper airplane flew away'); schedulePlane(9000+Math.random()*7000); };
+  log('paper airplane passing by');
 }
 /* 앱을 열 때: 어둠 속 워드마크 → 파란 판이 드러남 → 톤암이 스윙해 들어옴 → 비행기, 인사, 슬리브 */
 function homeIntro(){
