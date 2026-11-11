@@ -395,12 +395,18 @@ home(){
 /* ---------------- LP HUB (New LP / Record mode 중심) ---------------- */
 hub(){
   const lp=S.currentLP, n=lp.moments.length;
-  const dots=lp.moments.map((m,k)=>{const a=(-55+k*27)%110*Math.PI/180,r=175+(k*53)%100;
-    return `<div class="hpin ${S.justPinned&&k===n-1?'drop':''}" style="left:${35.5+r*Math.cos(a)}px;top:${379.5+r*Math.sin(a)}px">${pinThumb(lp,m,k)}<div class="stem"></div><div class="foot"></div></div>`}).join('');
+  // 모먼트마다 판의 서로 다른 홈(반지름)에 핀이 꽂히고, 그 홈이 흰 줄로 새겨짐
+  const pinPos=k=>({deg:(-55+k*27)%110, r:165+(k%9)*15});
+  const fresh=S.justPinned?n-1:-1;
+  const dots=lp.moments.map((m,k)=>{const {deg,r}=pinPos(k), a=deg*Math.PI/180, foot=r+3;
+    return `<div class="hpin ${k===fresh?'drop':''}" style="left:${35.5+foot*Math.cos(a)}px;top:${379.5+foot*Math.sin(a)}px">${pinThumb(lp,m,k)}<div class="stem"></div><div class="foot"></div></div>`}).join('');
+  const grooves=`<svg class="hub-grooves" viewBox="0 0 607 607">${lp.moments.map((m,k)=>{const {deg,r}=pinPos(k);
+    return `<circle class="groove ${k===fresh?'carve':''}" cx="303.5" cy="303.5" r="${r}" transform="rotate(${deg} 303.5 303.5)" style="--len:${(2*Math.PI*r).toFixed(1)}"/>`}).join('')}</svg>`;
   S.justPinned=false;
   return `<div class="screen" id="s-hub">
     <div class="topbar"><button class="icon-btn" data-a="hubBack">${ico.back}</button><button class="hub-finish ${n?'':'off'}" data-a="${n?'finish':'finishLocked'}">Finish</button></div>
     <div class="vwrap"><div class="vinyl"><div class="hole"></div></div></div>
+    ${grooves}
     ${dots}
     <button class="hub-city" data-a="enterInfo">${lp.city||'New Journey'} <span class="edit">✎</span><small>${n} MOMENT${n===1?'':'S'}</small></button>
     <div class="hub-actions">
